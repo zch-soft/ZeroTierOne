@@ -11,10 +11,10 @@
  */
 /****/
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdint.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cstdint>
 
 #include "Constants.hpp"
 #include "Identity.hpp"
@@ -68,10 +68,10 @@ static inline void _computeMemoryHardHash(const void *publicKey,unsigned int pub
 
 // Hashcash generation halting condition -- halt when first byte is less than
 // threshold value.
-struct _Identity_generate_cond
+struct G_Identity_generate_cond
 {
-	_Identity_generate_cond() {}
-	_Identity_generate_cond(unsigned char *sb,char *gm) : digest(sb),genmem(gm) {}
+	G_Identity_generate_cond() {}
+	G_Identity_generate_cond(unsigned char *sb,char *gm) : digest(sb),genmem(gm) {}
 	inline bool operator()(const C25519::Pair &kp) const
 	{
 		_computeMemoryHardHash(kp.pub.data,ZT_C25519_PUBLIC_KEY_LEN,digest,genmem);
@@ -88,7 +88,7 @@ void Identity::generate()
 
 	C25519::Pair kp;
 	do {
-		kp = C25519::generateSatisfying(_Identity_generate_cond(digest,genmem));
+		kp = C25519::generateSatisfying(G_Identity_generate_cond(digest,genmem));
 		_address.setTo(digest + 59,ZT_ADDRESS_LENGTH); // last 5 bytes are address
 	} while (_address.isReserved());
 

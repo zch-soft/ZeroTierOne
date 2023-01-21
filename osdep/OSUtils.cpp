@@ -11,19 +11,19 @@
  */
 /****/
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdarg.h>
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
+#include <cstdarg>
 #include <sys/stat.h>
-#include <stdlib.h>
+#include <cstdlib>
 
 #include "../node/Constants.hpp"
 #include "../node/Utils.hpp"
 
 #ifdef __UNIX_LIKE__
 #include <unistd.h>
-#include <errno.h>
+#include <cerrno>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -68,7 +68,7 @@ unsigned int OSUtils::ztsnprintf(char *buf,unsigned int len,const char *fmt,...)
 
 #ifdef __UNIX_LIKE__
 bool OSUtils::redirectUnixOutputs(const char *stdoutPath,const char *stderrPath)
-	throw()
+	noexcept
 {
 	int fdout = ::open(stdoutPath,O_WRONLY|O_CREAT,0600);
 	if (fdout > 0) {
@@ -115,7 +115,7 @@ std::vector<std::string> OSUtils::listDirectory(const char *path,bool includeDir
 		if (readdir_r(d,&de,&dptr))
 			break;
 		if (dptr) {
-			if ((strcmp(dptr->d_name,"."))&&(strcmp(dptr->d_name,".."))&&((dptr->d_type != DT_DIR)||(includeDirectories)))
+			if ((strcmp(dptr->d_name,".") != 0)&&(strcmp(dptr->d_name,"..") != 0)&&((dptr->d_type != DT_DIR)||(includeDirectories)))
 				r.push_back(std::string(dptr->d_name));
 		} else break;
 	}
@@ -165,7 +165,7 @@ long OSUtils::cleanDirectory(const char *path,const int64_t olderThan)
 		if (readdir_r(d,&de,&dptr))
 			break;
 		if (dptr) {
-			if ((strcmp(dptr->d_name,"."))&&(strcmp(dptr->d_name,".."))&&(dptr->d_type == DT_REG)) {
+			if ((strcmp(dptr->d_name,".") != 0)&&(strcmp(dptr->d_name,"..") != 0)&&(dptr->d_type == DT_REG)) {
 				ztsnprintf(tmp,sizeof(tmp),"%s/%s",path,dptr->d_name);
 				if (stat(tmp,&st) == 0) {
 					int64_t mt = (int64_t)(st.st_mtime);

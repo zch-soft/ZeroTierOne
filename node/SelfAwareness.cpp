@@ -11,9 +11,9 @@
  */
 /****/
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include <set>
 #include <vector>
@@ -33,10 +33,10 @@
 
 namespace ZeroTier {
 
-class _ResetWithinScope
+class G_ResetWithinScope
 {
 public:
-	_ResetWithinScope(void *tPtr,int64_t now,int inetAddressFamily,InetAddress::IpScope scope) :
+	G_ResetWithinScope(void *tPtr,int64_t now,int inetAddressFamily,InetAddress::IpScope scope) :
 		_now(now),
 		_tPtr(tPtr),
 		_family(inetAddressFamily),
@@ -89,8 +89,8 @@ void SelfAwareness::iam(void *tPtr,const Address &reporter,const int64_t receive
 		}
 
 		// Reset all paths within this scope and address family
-		_ResetWithinScope rset(tPtr,now,myPhysicalAddress.ss_family,(InetAddress::IpScope)scope);
-		RR->topology->eachPeer<_ResetWithinScope &>(rset);
+		G_ResetWithinScope rset(tPtr,now,myPhysicalAddress.ss_family,(InetAddress::IpScope)scope);
+		RR->topology->eachPeer<G_ResetWithinScope &>(rset);
 	} else {
 		// Otherwise just update DB to use to determine external surface info
 		entry.mySurface = myPhysicalAddress;

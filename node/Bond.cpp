@@ -110,7 +110,7 @@ SharedPtr<Bond> Bond::createBond(const RuntimeEnvironment* renv, const SharedPtr
 			}
 			if (! _defaultPolicy && _defaultPolicyStr.length()) {
 				bond = new Bond(renv, _bondPolicyTemplates[_defaultPolicyStr].ptr(), peer);
-				bond->debug("new default custom bond (based on %s)", bond->getPolicyStrByCode(bond->policy()).c_str());
+				bond->debug("new default custom bond (based on %s)", Bond::getPolicyStrByCode(bond->policy()).c_str());
 			}
 		}
 		else {
@@ -324,7 +324,7 @@ void Bond::addPathToBond(int nominatedIdx, int bondedIdx)
 
 SharedPtr<Path> Bond::getAppropriatePath(int64_t now, int32_t flowId)
 {
-	Mutex::Lock _l(_paths_m);
+	Mutex::Lock _l1(_paths_m);
 	/**
 	 * active-backup
 	 */
@@ -385,7 +385,7 @@ SharedPtr<Path> Bond::getAppropriatePath(int64_t now, int32_t flowId)
 			int m_idx = _realIdxMap[_freeRandomByte % _numBondedPaths];
 			return _paths[m_idx].p;
 		}
-		Mutex::Lock _l(_flows_m);
+		Mutex::Lock _l2(_flows_m);
 		std::map<int16_t, SharedPtr<Flow> >::iterator it = _flows.find(flowId);
 		if (likely(it != _flows.end())) {
 			it->second->lastActivity = now;

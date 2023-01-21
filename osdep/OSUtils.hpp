@@ -66,7 +66,11 @@ public:
 	 * @param ... Format arguments
 	 * @throws std::length_error buf[] too short (buf[] will still be left null-terminated)
 	 */
-	static unsigned int ztsnprintf(char *buf,unsigned int len,const char *fmt,...);
+	static unsigned int ztsnprintf(char *buf, unsigned int len, const char *fmt, ...)
+#ifdef __GNUC__
+		__attribute__((format(printf, 3, 4)))
+#endif
+	;
 
 #ifdef __UNIX_LIKE__
 	/**

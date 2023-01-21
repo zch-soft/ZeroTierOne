@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <time.h>
 #include <errno.h>
+#include <cinttypes> // for PRIx64
 
 #include "node/Constants.hpp"
 
@@ -1465,11 +1466,11 @@ static int idtool(int argc,char **argv)
 			id.generate();
 			if ((id.address().toInt() >> (40 - vanityBits)) == vanity) {
 				if (vanityBits > 0) {
-					fprintf(stderr,"vanity address: found %.10llx !\n",(unsigned long long)id.address().toInt());
+					fprintf(stderr,"vanity address: found %.10" PRIx64 " !\n", id.address().toInt());
 				}
 				break;
 			} else {
-				fprintf(stderr,"vanity address: tried %.10llx looking for first %d bits of %.10llx\n",(unsigned long long)id.address().toInt(),vanityBits,(unsigned long long)(vanity << (40 - vanityBits)));
+				fprintf(stderr,"vanity address: tried %.10" PRIx64 " looking for first %d bits of %.10" PRIx64 "\n", id.address().toInt(),vanityBits, (vanity << (40 - vanityBits)));
 			}
 		}
 

@@ -67,7 +67,7 @@ class RuntimeEnvironment;
 class CertificateOfMembership : public Credential
 {
 public:
-	static inline Credential::Type credentialType() { return Credential::CREDENTIAL_TYPE_COM; }
+	inline Credential::Type credentialType() const { return Credential::CREDENTIAL_TYPE_COM; }
 
 	/**
 	 * Reserved qualifier IDs

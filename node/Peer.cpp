@@ -101,7 +101,7 @@ void Peer::received(
 		// If this is a direct packet (no hops), update existing paths or learn new ones
 		bool havePath = false;
 		{
-			Mutex::Lock _l(_paths_m);
+			Mutex::Lock _l1(_paths_m);
 			for(unsigned int i=0;i<ZT_MAX_PEER_NETWORK_PATHS;++i) {
 				if (_paths[i].p) {
 					if (_paths[i].p == path) {
@@ -125,7 +125,7 @@ void Peer::received(
 			 */
 
 			if (verb == Packet::VERB_OK) {
-				Mutex::Lock _l(_paths_m);
+				Mutex::Lock _l2(_paths_m);
 				unsigned int replacePath = ZT_MAX_PEER_NETWORK_PATHS;
 				uint64_t maxScore = 0;
 				uint64_t currScore;
@@ -504,10 +504,10 @@ void Peer::performMultipathStateCheck(void *tPtr, int64_t now)
 			numAlivePaths++;
 		}
 	}
-	_localMultipathSupported = ((numAlivePaths >= 1) && (RR->bc->inUse()) && (ZT_PROTO_VERSION > 9));
+	_localMultipathSupported = ((numAlivePaths >= 1) && (Bond::inUse()) && (ZT_PROTO_VERSION > 9));
 	if (_localMultipathSupported && !_bond) {
 		if (RR->bc) {
-			_bond = RR->bc->createBond(RR, this);
+			_bond = Bond::createBond(RR, this);
 			/**
 			 * Allow new bond to retroactively learn all paths known to this peer
 			 */

@@ -44,7 +44,7 @@ class RuntimeEnvironment;
 class CertificateOfOwnership : public Credential
 {
 public:
-	static inline Credential::Type credentialType() { return Credential::CREDENTIAL_TYPE_COO; }
+	inline Credential::Type credentialType() const { return Credential::CREDENTIAL_TYPE_COO; }
 
 	enum Thing
 	{

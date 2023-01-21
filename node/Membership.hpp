@@ -217,7 +217,7 @@ private:
 	{
 		const int64_t ts = remoteCredential.timestamp();
 		if (((ts >= nconf.timestamp) ? (ts - nconf.timestamp) : (nconf.timestamp - ts)) <= nconf.credentialTimeMaxDelta) {
-			const int64_t *threshold = _revocations.get(credentialKey(C::credentialType(),remoteCredential.id()));
+			const int64_t *threshold = _revocations.get(credentialKey(remoteCredential.credentialType(),remoteCredential.id()));
 			return ((!threshold)||(ts > *threshold));
 		}
 		return false;

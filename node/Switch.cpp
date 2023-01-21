@@ -11,8 +11,8 @@
  */
 /****/
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 
 #include <algorithm>
 #include <utility>
@@ -768,7 +768,7 @@ void Switch::aqm_dequeue(void *tPtr)
 
 		// Attempt dequeue from queues in NEW list
 		bool examiningNewQueues = true;
-		while (currQueues->size()) {
+		while (!currQueues->empty()) {
 			ManagedQueue *queueAtFrontOfList = currQueues->front();
 			if (queueAtFrontOfList->byteCredit < 0) {
 				queueAtFrontOfList->byteCredit += ZT_AQM_QUANTUM;

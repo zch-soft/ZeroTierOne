@@ -57,7 +57,7 @@ class RuntimeEnvironment;
 class Capability : public Credential
 {
 public:
-	static inline Credential::Type credentialType() { return Credential::CREDENTIAL_TYPE_CAPABILITY; }
+	inline Credential::Type credentialType() const { return Credential::CREDENTIAL_TYPE_CAPABILITY; }
 
 	Capability() :
 		_nwid(0),

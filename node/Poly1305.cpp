@@ -7,10 +7,10 @@ Public domain.
 #include "Constants.hpp"
 #include "Poly1305.hpp"
 
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
 
 #ifdef __WINDOWS__
 #pragma warning(disable: 4146)
@@ -52,10 +52,10 @@ typedef struct poly1305_context {
     typedef unsigned uint128_t __attribute__((mode(TI)));
   #endif
 
-  #define MUL(out, x, y) out = ((uint128_t)x * y)
-  #define ADD(out, in) out += in
-  #define ADDLO(out, in) out += in
-  #define SHR(in, shift) (unsigned long long)(in >> (shift))
+  #define MUL(out, x, y) out = ((uint128_t)(x) * (y))
+  #define ADD(out, in) (out) += (in)
+  #define ADDLO(out, in) (out) += (in)
+  #define SHR(in, shift) (unsigned long long)((in) >> (shift))
   #define LO(in) (unsigned long long)(in)
 
 //  #define POLY1305_NOINLINE __attribute__((noinline))
@@ -74,7 +74,7 @@ typedef struct poly1305_state_internal_t {
 } poly1305_state_internal_t;
 
 #if defined(ZT_NO_TYPE_PUNNING) || (__BYTE_ORDER != __LITTLE_ENDIAN)
-static inline unsigned long long U8TO64(const unsigned char *p)
+inline unsigned long long U8TO64(const unsigned char *p)
 {
   return
     (((unsigned long long)(p[0] & 0xff)      ) |
@@ -91,7 +91,7 @@ static inline unsigned long long U8TO64(const unsigned char *p)
 #endif
 
 #if defined(ZT_NO_TYPE_PUNNING) || (__BYTE_ORDER != __LITTLE_ENDIAN)
-static inline void U64TO8(unsigned char *p, unsigned long long v)
+inline void U64TO8(unsigned char *p, unsigned long long v)
 {
   p[0] = (v      ) & 0xff;
   p[1] = (v >>  8) & 0xff;
@@ -106,7 +106,7 @@ static inline void U64TO8(unsigned char *p, unsigned long long v)
 #define U64TO8(p,v) ((*reinterpret_cast<unsigned long long *>(p)) = (v))
 #endif
 
-static inline void poly1305_init(poly1305_context *ctx, const unsigned char key[32]) {
+inline void poly1305_init(poly1305_context *ctx, const unsigned char key[32]) {
   poly1305_state_internal_t *st = (poly1305_state_internal_t *)ctx;
   unsigned long long t0,t1;
 
@@ -131,7 +131,7 @@ static inline void poly1305_init(poly1305_context *ctx, const unsigned char key[
   st->final = 0;
 }
 
-static inline void poly1305_blocks(poly1305_state_internal_t *st, const unsigned char *m, size_t bytes) {
+inline void poly1305_blocks(poly1305_state_internal_t *st, const unsigned char *m, size_t bytes) {
   const unsigned long long hibit = (st->final) ? 0 : ((unsigned long long)1 << 40); /* 1 << 128 */
   unsigned long long r0,r1,r2;
   unsigned long long s1,s2;
@@ -182,7 +182,7 @@ static inline void poly1305_blocks(poly1305_state_internal_t *st, const unsigned
   st->h[2] = h2;
 }
 
-static inline void poly1305_finish(poly1305_context *ctx, unsigned char mac[16]) {
+inline void poly1305_finish(poly1305_context *ctx, unsigned char mac[16]) {
   poly1305_state_internal_t *st = (poly1305_state_internal_t *)ctx;
   unsigned long long h0,h1,h2,c;
   unsigned long long g0,g1,g2;
@@ -470,7 +470,7 @@ poly1305_finish(poly1305_context *ctx, unsigned char mac[16]) {
 
 #endif // MSC/GCC or not
 
-static inline void poly1305_update(poly1305_context *ctx, const unsigned char *m, size_t bytes) {
+inline void poly1305_update(poly1305_context *ctx, const unsigned char *m, size_t bytes) {
   poly1305_state_internal_t *st = (poly1305_state_internal_t *)ctx;
   size_t i;
 

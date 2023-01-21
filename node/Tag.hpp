@@ -50,7 +50,7 @@ class RuntimeEnvironment;
 class Tag : public Credential
 {
 public:
-	static inline Credential::Type credentialType() { return Credential::CREDENTIAL_TYPE_TAG; }
+	inline Credential::Type credentialType() const { return Credential::CREDENTIAL_TYPE_TAG; }
 
 	Tag() :
 		_id(0),

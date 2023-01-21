@@ -11,18 +11,18 @@
  */
 /****/
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <time.h>
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
+#include <cstdarg>
+#include <ctime>
 #include <sys/stat.h>
 
 #include "Constants.hpp"
 
 #ifdef __UNIX_LIKE__
 #include <unistd.h>
-#include <errno.h>
+#include <cerrno>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -185,19 +185,19 @@ const Utils::CPUIDRegisters Utils::CPUID;
 #endif
 
 // Crazy hack to force memory to be securely zeroed in spite of the best efforts of optimizing compilers.
-static void _Utils_doBurn(volatile uint8_t *ptr,unsigned int len)
+static void G_Utils_doBurn(volatile uint8_t *ptr,unsigned int len)
 {
 	volatile uint8_t *const end = ptr + len;
 	while (ptr != end) *(ptr++) = (uint8_t)0;
 }
-static void (*volatile _Utils_doBurn_ptr)(volatile uint8_t *,unsigned int) = _Utils_doBurn;
-void Utils::burn(void *ptr,unsigned int len) { (_Utils_doBurn_ptr)((volatile uint8_t *)ptr,len); }
+static void (*volatile G_Utils_doBurn_ptr)(volatile uint8_t *,unsigned int) = G_Utils_doBurn;
+void Utils::burn(void *ptr,unsigned int len) { (G_Utils_doBurn_ptr)((volatile uint8_t *)ptr,len); }
 
-static unsigned long _Utils_itoa(unsigned long n,char *s)
+static unsigned long G_Utils_itoa(unsigned long n,char *s)
 {
 	if (n == 0)
 		return 0;
-	unsigned long pos = _Utils_itoa(n / 10,s);
+	unsigned long pos = G_Utils_itoa(n / 10,s);
 	if (pos >= 22) // sanity check, should be impossible
 		pos = 22;
 	s[pos] = '0' + (char)(n % 10);
@@ -210,7 +210,7 @@ char *Utils::decimal(unsigned long n,char s[24])
 		s[1] = (char)0;
 		return s;
 	}
-	s[_Utils_itoa(n,s)] = (char)0;
+	s[G_Utils_itoa(n,s)] = (char)0;
 	return s;
 }
 

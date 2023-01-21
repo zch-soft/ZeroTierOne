@@ -145,7 +145,7 @@ static Membership::AddCredentialResult _addCredImpl(Hashtable<uint32_t,C> &remot
 			return Membership::ADD_ACCEPTED_REDUNDANT;
 	}
 
-	const int64_t *const rt = revocations.get(Membership::credentialKey(C::credentialType(),cred.id()));
+	const int64_t *const rt = revocations.get(Membership::credentialKey(cred.credentialType(),cred.id()));
 	if ((rt)&&(*rt >= cred.timestamp())) {
 		RR->t->credentialRejected(tPtr,cred,"revoked");
 		return Membership::ADD_REJECTED;

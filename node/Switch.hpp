@@ -105,7 +105,7 @@ public:
 	 * @param t Current time
 	 * @param count Number of packets dropped this round
 	 */
-	uint64_t control_law(uint64_t t, int count);
+	static uint64_t control_law(uint64_t t, int count);
 
 	/**
 	 * Selects a packet eligible for transmission from a TX queue. According to the control law, multiple packets
@@ -114,7 +114,7 @@ public:
 	 * @param q The TX queue that is being dequeued from
 	 * @param now Current time
 	 */
-	dqr dodequeue(ManagedQueue *q, uint64_t now);
+	static dqr dodequeue(ManagedQueue *q, uint64_t now);
 
 	/**
 	 * Presents a packet to the AQM scheduler.

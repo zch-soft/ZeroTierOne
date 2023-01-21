@@ -11,11 +11,11 @@
  */
 /****/
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
-#include <stdint.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstdarg>
+#include <cstring>
+#include <cstdint>
 
 #include "../version.h"
 
@@ -92,7 +92,7 @@ Node::Node(void *uptr,void *tptr,const struct ZT_Node_Callbacks *callbacks,int64
 		idtmp[0] = RR->identity.address().toInt(); idtmp[1] = 0;
 		n = stateObjectGet(tptr,ZT_STATE_OBJECT_IDENTITY_PUBLIC,idtmp,tmp,sizeof(tmp) - 1);
 		if ((n > 0)&&(n < (int)sizeof(RR->publicIdentityStr))&&(n < (int)sizeof(tmp))) {
-			if (memcmp(tmp,RR->publicIdentityStr,n))
+			if (memcmp(tmp,RR->publicIdentityStr,n) != 0)
 				stateObjectPut(tptr,ZT_STATE_OBJECT_IDENTITY_PUBLIC,idtmp,RR->publicIdentityStr,(unsigned int)strlen(RR->publicIdentityStr));
 		}
 	}
@@ -187,10 +187,10 @@ ZT_ResultCode Node::processVirtualNetworkFrame(
 }
 
 // Closure used to ping upstream and active/online peers
-class _PingPeersThatNeedPing
+class G_PingPeersThatNeedPing
 {
 public:
-	_PingPeersThatNeedPing(const RuntimeEnvironment *renv,void *tPtr,Hashtable< Address,std::vector<InetAddress> > &alwaysContact,int64_t now) :
+	G_PingPeersThatNeedPing(const RuntimeEnvironment *renv,void *tPtr,Hashtable< Address,std::vector<InetAddress> > &alwaysContact,int64_t now) :
 		RR(renv),
 		_tPtr(tPtr),
 		_alwaysContact(alwaysContact),
@@ -263,11 +263,11 @@ ZT_ResultCode Node::processBackgroundTasks(void *tptr,int64_t now,volatile int64
 
 	// Process background bond tasks
 	unsigned long bondCheckInterval = ZT_PING_CHECK_INVERVAL;
-	if (RR->bc->inUse()) {
-		bondCheckInterval = std::max(RR->bc->minReqMonitorInterval(), ZT_CORE_TIMER_TASK_GRANULARITY);
+	if (Bond::inUse()) {
+		bondCheckInterval = std::max(Bond::minReqMonitorInterval(), ZT_CORE_TIMER_TASK_GRANULARITY);
 		if ((now - _lastGratuitousPingCheck) >= ZT_CORE_TIMER_TASK_GRANULARITY) {
 			_lastGratuitousPingCheck = now;
-			RR->bc->processBackgroundTasks(tptr, now);
+			Bond::processBackgroundTasks(tptr, now);
 		}
 	}
 
@@ -332,8 +332,8 @@ ZT_ResultCode Node::processBackgroundTasks(void *tptr,int64_t now,volatile int64
 			}
 
 			// Ping active peers, upstreams, and others that we should always contact
-			_PingPeersThatNeedPing pfunc(RR,tptr,alwaysContact,now);
-			RR->topology->eachPeer<_PingPeersThatNeedPing &>(pfunc);
+			G_PingPeersThatNeedPing pfunc(RR,tptr,alwaysContact,now);
+			RR->topology->eachPeer<G_PingPeersThatNeedPing &>(pfunc);
 
 			// Run WHOIS to create Peer for alwaysContact addresses that could not be contacted
 			{
@@ -638,12 +638,12 @@ bool Node::shouldUsePathForZeroTierTraffic(void *tPtr,const Address &ztaddr,cons
 	{
 		Mutex::Lock _l(_networks_m);
 		Hashtable< uint64_t,SharedPtr<Network> >::Iterator i(_networks);
-		uint64_t *k = (uint64_t *)0;
+		uint64_t *k1 = (uint64_t *)0;
 		SharedPtr<Network> *v = (SharedPtr<Network> *)0;
-		while (i.next(k,v)) {
+		while (i.next(k1,v)) {
 			if ((*v)->hasConfig()) {
-				for(unsigned int k=0;k<(*v)->config().staticIpCount;++k) {
-					if ((*v)->config().staticIps[k].containsAddress(remoteAddress))
+				for(unsigned int k2=0;k2<(*v)->config().staticIpCount;++k2) {
+					if ((*v)->config().staticIps[k2].containsAddress(remoteAddress))
 						return false;
 				}
 			}

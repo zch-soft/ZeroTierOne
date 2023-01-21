@@ -17,7 +17,7 @@ struct sha512_state {
 	uint8_t buf[128];
 };
 
-static const uint64_t K[80] = {
+const uint64_t K[80] = {
 	0x428a2f98d728ae22ULL,0x7137449123ef65cdULL,0xb5c0fbcfec4d3b2fULL,0xe9b5dba58189dbbcULL,
 	0x3956c25bf348b538ULL,0x59f111f1b605d019ULL,0x923f82a4af194f9bULL,0xab1c5ed5da6d8118ULL,
 	0xd807aa98a3030242ULL,0x12835b0145706fbeULL,0x243185be4ee4b28cULL,0x550c7dc3d5ffb4e2ULL,
@@ -44,8 +44,8 @@ static const uint64_t K[80] = {
 #define LOAD64H(x, y) x = Utils::loadBigEndian<uint64_t>(y)
 #define ROL64c(x,y) (((x)<<(y)) | ((x)>>(64-(y))))
 #define ROR64c(x,y) (((x)>>(y)) | ((x)<<(64-(y))))
-#define Ch(x,y,z)       (z ^ (x & (y ^ z)))
-#define Maj(x,y,z)      (((x | y) & z) | (x & y))
+#define Ch(x,y,z)       ((z) ^ ((x) & ((y) ^ (z))))
+#define Maj(x,y,z)      ((((x) | (y)) & (z)) | ((x) & (y)))
 #define S(x, n)         ROR64c(x, n)
 #define R(x, n)         ((x)>>(n))
 #define Sigma0(x)       (S(x, 28) ^ S(x, 34) ^ S(x, 39))
@@ -53,7 +53,7 @@ static const uint64_t K[80] = {
 #define Gamma0(x)       (S(x, 1) ^ S(x, 8) ^ R(x, 7))
 #define Gamma1(x)       (S(x, 19) ^ S(x, 61) ^ R(x, 6))
 
-static ZT_INLINE void sha512_compress(sha512_state *const md,uint8_t *const buf)
+ZT_INLINE void sha512_compress(sha512_state *const md,uint8_t *const buf)
 {
 	uint64_t S[8], W[80], t0, t1;
 	int i;
@@ -66,11 +66,11 @@ static ZT_INLINE void sha512_compress(sha512_state *const md,uint8_t *const buf)
 		W[i] = Gamma1(W[i - 2]) + W[i - 7] + Gamma0(W[i - 15]) + W[i - 16];
 
 #define RND(a,b,c,d,e,f,g,h,i) \
-	t0 = h + Sigma1(e) + Ch(e, f, g) + K[i] + W[i]; \
-	t1 = Sigma0(a) + Maj(a, b, c); \
-	d += t0; \
-	h  = t0 + t1;
-
+	t0 = (h) + Sigma1(e) + Ch((e), (f), (g)) + K[(i)] + W[(i)]; \
+	t1 = Sigma0(a) + Maj((a), (b), (c)); \
+	(d) += t0; \
+	(h)  = t0 + t1;
+	
 	for (i = 0; i < 80; i += 8) {
 		RND(S[0],S[1],S[2],S[3],S[4],S[5],S[6],S[7],i+0);
 		RND(S[7],S[0],S[1],S[2],S[3],S[4],S[5],S[6],i+1);
@@ -86,7 +86,7 @@ static ZT_INLINE void sha512_compress(sha512_state *const md,uint8_t *const buf)
 		md->state[i] = md->state[i] + S[i];
 }
 
-static ZT_INLINE void sha384_init(sha512_state *const md)
+ZT_INLINE void sha384_init(sha512_state *const md)
 {
 	md->curlen = 0;
 	md->length = 0;
@@ -100,7 +100,7 @@ static ZT_INLINE void sha384_init(sha512_state *const md)
 	md->state[7] = 0x47b5481dbefa4fa4ULL;
 }
 
-static ZT_INLINE void sha512_init(sha512_state *const md)
+ZT_INLINE void sha512_init(sha512_state *const md)
 {
 	md->curlen = 0;
 	md->length = 0;
@@ -114,7 +114,7 @@ static ZT_INLINE void sha512_init(sha512_state *const md)
 	md->state[7] = 0x5be0cd19137e2179ULL;
 }
 
-static void sha512_process(sha512_state *const md,const uint8_t *in,unsigned long inlen)
+void sha512_process(sha512_state *const md,const uint8_t *in,unsigned long inlen)
 {
 	while (inlen > 0) {
 		if (md->curlen == 0 && inlen >= 128) {
@@ -137,7 +137,7 @@ static void sha512_process(sha512_state *const md,const uint8_t *in,unsigned lon
 	}
 }
 
-static ZT_INLINE void sha512_done(sha512_state *const md,uint8_t *out)
+ZT_INLINE void sha512_done(sha512_state *const md,uint8_t *out)
 {
 	int i;
 

@@ -11,10 +11,10 @@
  */
 /****/
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <math.h>
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
+#include <cmath>
 
 #include "../include/ZeroTierDebug.h"
 
@@ -40,7 +40,7 @@ namespace ZeroTier {
 namespace {
 
 // Returns true if packet appears valid; pos and proto will be set
-static inline bool _ipv6GetPayload(const uint8_t *frameData,unsigned int frameLen,unsigned int &pos,unsigned int &proto)
+inline bool _ipv6GetPayload(const uint8_t *frameData,unsigned int frameLen,unsigned int &pos,unsigned int &proto)
 {
 	if (frameLen < 40)
 		return false;
@@ -77,7 +77,7 @@ enum _doZtFilterResult
 	DOZTFILTER_SUPER_ACCEPT
 };
 
-static _doZtFilterResult _doZtFilter(
+_doZtFilterResult _doZtFilter(
 	const RuntimeEnvironment *RR,
 	Trace::RuleResultLog &rrl,
 	const NetworkConfig &nconf,

@@ -488,7 +488,7 @@ class Bond {
 	 * @param createIfNeeded Whether a Link object is created if the name wasn't previously in the link map
 	 * @return Physical link definition
 	 */
-	SharedPtr<Link> getLinkBySocket(const std::string& policyAlias, uint64_t localSocket, bool createIfNeeded);
+	static SharedPtr<Link> getLinkBySocket(const std::string& policyAlias, uint64_t localSocket, bool createIfNeeded);
 
 	/**
 	 * Gets a reference to a physical link definition given its human-readable system name.

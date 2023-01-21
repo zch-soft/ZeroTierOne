@@ -11,9 +11,9 @@
  */
 /****/
 
-#include <stdio.h>
-#include <string.h>
-#include <stdint.h>
+#include <cstdio>
+#include <cstring>
+#include <cstdint>
 
 #include <string>
 
