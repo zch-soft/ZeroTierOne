@@ -19,6 +19,7 @@
 #include "NetworkConfig.hpp"
 #include "Buffer.hpp"
 #include "Switch.hpp"
+#include <climits>
 
 namespace ZeroTier {
 
@@ -127,19 +128,45 @@ SharedPtr<Peer> Topology::getUpstreamPeer()
 	Mutex::Lock _l2(_peers_m);
 	Mutex::Lock _l1(_upstreams_m);
 
+	char buf[64];
+	const unsigned int SCALE = 100;
 	for(std::vector<Address>::const_iterator a(_upstreamAddresses.begin());a!=_upstreamAddresses.end();++a) {
 		const SharedPtr<Peer> *p = _peers.get(*a);
 		if (p) {
-			const unsigned int q = (*p)->relayQuality(now);
-			if (q <= bestq) {
+			unsigned int q = (*p)->relayQuality(now);
+
+
+			// add SCALE to Planets
+			// and subsctact SCALE from Moons
+			// lower is better
+			// it's just latency in ms as far as I know
+			// we add to planets because both could be 0
+			// otherwise and a  planet could be chosen over a moon with the same score
+			const ZT_PeerRole role = RR->topology->role(*a);
+			if (q == INT_MAX) {
+				//
+			} else if (role == ZT_PEER_ROLE_MOON){
+				if (q <= SCALE) { q = 0; }
+				else { q = q - SCALE; }
+			} else {
+				if (INT_MAX - q <= SCALE) { q = INT_MAX; }
+				else {q = q + SCALE;}
+			}
+
+
+			if (q <= bestq  ) {
+				fprintf(stderr, "quality %s: %u - prev: %u - type: %d\n", a->toString(buf), q, bestq, role);
 				bestq = q;
 				best = p;
 			}
 		}
 	}
 
-	if (!best)
+	if (!best) {
 		return SharedPtr<Peer>();
+	}
+
+	fprintf(stderr, "best %s %d\n",  (*best)->address().toString(buf), bestq);
 	return *best;
 }
 
@@ -163,7 +190,7 @@ bool Topology::shouldAcceptWorldUpdateFrom(const Address &addr) const
 
 ZT_PeerRole Topology::role(const Address &ztaddr) const
 {
-	Mutex::Lock _l(_upstreams_m);
+	//Mutex::Lock _l(_upstreams_m);
 	if (std::find(_upstreamAddresses.begin(),_upstreamAddresses.end(),ztaddr) != _upstreamAddresses.end()) {
 		for(std::vector<World::Root>::const_iterator i(_planet.roots().begin());i!=_planet.roots().end();++i) {
 			if (i->identity.address() == ztaddr)
