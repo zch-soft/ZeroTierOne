@@ -7,61 +7,32 @@ local build_channel = "zerotier-builds";
 local release_channel = "zerotier-releases";
 
 local targets = [
-    { "os": "linux", distro: "redhat", "name": "el9",      "isas": [                 "amd64", "arm64", "ppc64le", "s390x" ],                        "events": [ "tag", "custom" ] },
-    { "os": "linux", distro: "redhat", "name": "el8",      "isas": [                 "amd64", "arm64", "ppc64le", "s390x" ],                        "events": [ "tag" ] },
-    { "os": "linux", distro: "redhat", "name": "el7",      "isas": [ "386",          "amd64",          "ppc64le"],                                  "events": [ "tag" ] },
-    { "os": "linux", distro: "amazon", "name": "amzn2",    "isas": [                 "amd64", "arm64" ],                                            "events": [ "tag" ] },
-    { "os": "linux", distro: "amazon", "name": "amzn2022", "isas": [                 "amd64", "arm64" ],                                            "events": [ "tag" ] },
-    { "os": "linux", distro: "fedora", "name": "fc38",     "isas": [                 "amd64", "arm64", "ppc64le", "s390x" ],                        "events": [ "tag" ] },
-    { "os": "linux", distro: "fedora", "name": "fc37",     "isas": [                 "amd64", "arm64", "ppc64le", "s390x" ],                        "events": [ "tag" ] },
-    { "os": "linux", distro: "fedora", "name": "fc36",     "isas": [                 "amd64", "arm64", "ppc64le", "s390x" ],                        "events": [ "tag" ] },
-    { "os": "linux", distro: "ubuntu", "name": "jammy",    "isas": [        "armv7", "amd64", "arm64", "ppc64le", "s390x", "riscv64" ],             "events": [ "tag" ] },
-    { "os": "linux", distro: "ubuntu", "name": "focal",    "isas": [        "armv7", "amd64", "arm64", "ppc64le", "s390x", "riscv64" ],             "events": [ "tag" ] },
-    { "os": "linux", distro: "ubuntu", "name": "bionic",   "isas": [ "386", "armv7", "amd64", "arm64", "ppc64le", "s390x" ],                        "events": [ "tag" ] },
-    { "os": "linux", distro: "ubuntu", "name": "xenial",   "isas": [ "386", "armv7", "amd64", "arm64", "ppc64le", "s390x" ],                        "events": [ "tag" ] },
-    { "os": "linux", distro: "ubuntu", "name": "trusty",   "isas": [ "386", "armv7", "amd64", "arm64" ],                                            "events": [ "tag" ] },
-    { "os": "linux", distro: "debian", "name": "bookworm", "isas": [ "386", "armv7", "amd64", "arm64", "mips64le", "ppc64le", "s390x" ],            "events": [ "tag"] },
-    { "os": "linux", distro: "debian", "name": "bullseye", "isas": [ "386", "armv7", "amd64", "arm64", "mips64le", "ppc64le", "s390x" ],            "events": [ "push", "tag", "custom" ] },
-    { "os": "linux", distro: "debian", "name": "buster",   "isas": [ "386", "armv7", "amd64", "arm64" ],                                            "events": [ "tag" ] },
-    { "os": "linux", distro: "debian", "name": "stretch",  "isas": [ "386", "armv7", "amd64", "arm64" ],                                            "events": [ "tag" ] },
-    { "os": "linux", distro: "debian", "name": "jessie",   "isas": [ "386", "armv7", "amd64" ],                                                     "events": [ "tag" ] },
-
-//   { "os": "windows", distro: "windows", "name": "windows",  "isas": [ "amd64" ], "events": [ "push", "tag", "custom" ] },
-//   { "os": "darwin", distro: "darwin", "name": "darwin",  "isas": [ "amd64" ], "events": [ "push", "tag", "custom" ] },
-
-];
-
-local less_targets = [
-      { "os": "linux", distro: "redhat", "name": "el9",      "isas": [                 "amd64", "arm64" ],                        "events": [ "push", "tag", "custom" ] },
-      { "os": "linux", distro: "redhat", "name": "el8",      "isas": [                 "amd64", "arm64" ],                        "events": [ "push", "tag", "custom" ] },
-      { "os": "linux", distro: "ubuntu", "name": "jammy",    "isas": [        "armv7", "amd64", "arm64" ],             "events": [ "push", "tag", "custom" ] },
-      { "os": "linux", distro: "ubuntu", "name": "focal",    "isas": [        "armv7", "amd64", "arm64" ],             "events": [ "push", "tag", "custom" ] },
+    { "os": "linux", distro: "redhat", "name": "el9", "isas": [ "s390x" ], "events": [ "tag", "custom" ] },
 ];
 
 local master_targets = [
       //
       // copypasta from here
       //
-      { "os": "linux", distro: "redhat", "name": "el9",      "isas": [                 "amd64", "arm64", "ppc64le", "s390x" ],                        "events": [ "push", "tag", "custom" ] },
-      { "os": "linux", distro: "redhat", "name": "el8",      "isas": [                 "amd64", "arm64", "ppc64le", "s390x" ],                        "events": [ "push", "tag", "custom" ] },
-      { "os": "linux", distro: "redhat", "name": "el7",      "isas": [ "386", "amd64",          "ppc64le"],                                  "events": [ "push", "tag", "custom" ] },
-      { "os": "linux", distro: "amazon", "name": "amzn2",    "isas": [                 "amd64", "arm64" ],                                            "events": [ "push", "tag", "custom" ] },
-      { "os": "linux", distro: "amazon", "name": "amzn2022", "isas": [                 "amd64", "arm64" ],                                            "events": [ "push", "tag", "custom" ] },
-      { "os": "linux", distro: "fedora", "name": "fc38",     "isas": [                 "amd64", "arm64", "ppc64le", "s390x" ],                        "events": [ "push", "tag", "custom" ] },
-      { "os": "linux", distro: "fedora", "name": "fc37",     "isas": [                 "amd64", "arm64", "ppc64le", "s390x" ],                        "events": [ "push", "tag", "custom" ] },
-      { "os": "linux", distro: "fedora", "name": "fc36",     "isas": [                 "amd64", "arm64", "ppc64le", "s390x" ],                        "events": [ "push", "tag", "custom" ] },
-      { "os": "linux", distro: "ubuntu", "name": "jammy",    "isas": [        "armv7", "amd64", "arm64", "ppc64le", "s390x", "riscv64" ],             "events": [ "push", "tag", "custom" ] },
-      { "os": "linux", distro: "ubuntu", "name": "focal",    "isas": [        "armv7", "amd64", "arm64", "ppc64le", "s390x", "riscv64" ],             "events": [ "push", "tag", "custom" ] },
-      { "os": "linux", distro: "ubuntu", "name": "bionic",   "isas": [ "386", "armv7", "amd64", "arm64", "ppc64le", "s390x" ],                        "events": [ "push", "tag", "custom" ] },
-      { "os": "linux", distro: "ubuntu", "name": "xenial",   "isas": [ "386", "armv7", "amd64", "arm64", "ppc64le", "s390x" ],                        "events": [ "push", "tag", "custom" ] },
-      { "os": "linux", distro: "ubuntu", "name": "trusty",   "isas": [ "386", "armv7", "amd64", "arm64" ],                                            "events": [ "push", "tag", "custom" ] },
-      { "os": "linux", distro: "debian", "name": "sid",      "isas": [ "386", "armv7", "amd64", "arm64", "mips64le", "ppc64le", "s390x", "riscv64" ], "events": [ "push", "tag", "custom" ] },
-      { "os": "linux", distro: "debian", "name": "bookworm", "isas": [ "386", "armv7", "amd64", "arm64", "mips64le", "ppc64le", "s390x" ],            "events": [ "push", "tag", "custom" ] },
-      { "os": "linux", distro: "debian", "name": "bullseye", "isas": [ "386", "armv7", "amd64", "arm64", "mips64le", "ppc64le", "s390x" ],            "events": [ "push", "tag", "custom" ] },
-      { "os": "linux", distro: "debian", "name": "buster",   "isas": [ "386", "armv7", "amd64", "arm64" ],                                            "events": [ "push", "tag", "custom" ] },
-      { "os": "linux", distro: "debian", "name": "stretch",  "isas": [ "386", "armv7", "amd64", "arm64" ],                                            "events": [ "push", "tag", "custom" ] },
-      { "os": "linux", distro: "debian", "name": "jessie",   "isas": [ "386", "armv7", "amd64" ],                                                     "events": [ "push", "tag", "custom" ] },
-      { "os": "windows", distro: "windows", "name": "win2k22", "isas": [ "amd64" ],                                                                     "events": [ "push", "tag", "custom" ] }
+      { "os": "linux", distro: "redhat", "name": "el9",      "isas": [                 "amd64", "arm64", "ppc64le", "s390x" ],             "events": [ "push", "tag", "custom" ] },
+      { "os": "linux", distro: "redhat", "name": "el8",      "isas": [                 "amd64", "arm64", "ppc64le", "s390x" ],             "events": [ "push", "tag", "custom" ] },
+      { "os": "linux", distro: "redhat", "name": "el7",      "isas": [ "386", "amd64",                   "ppc64le"],                       "events": [ "push", "tag", "custom" ] },
+      { "os": "linux", distro: "amazon", "name": "amzn2",    "isas": [                 "amd64", "arm64" ],                                 "events": [ "push", "tag", "custom" ] },
+      { "os": "linux", distro: "amazon", "name": "amzn2022", "isas": [                 "amd64", "arm64" ],                                 "events": [ "push", "tag", "custom" ] },
+      { "os": "linux", distro: "fedora", "name": "fc38",     "isas": [                 "amd64", "arm64", "ppc64le", "s390x" ],             "events": [ "push", "tag", "custom" ] },
+      { "os": "linux", distro: "fedora", "name": "fc37",     "isas": [                 "amd64", "arm64", "ppc64le", "s390x" ],             "events": [ "push", "tag", "custom" ] },
+      { "os": "linux", distro: "fedora", "name": "fc36",     "isas": [                 "amd64", "arm64", "ppc64le", "s390x" ],             "events": [ "push", "tag", "custom" ] },
+      { "os": "linux", distro: "ubuntu", "name": "jammy",    "isas": [        "armv7", "amd64", "arm64", "ppc64le", "s390x", "riscv64" ],  "events": [ "push", "tag", "custom" ] },
+      { "os": "linux", distro: "ubuntu", "name": "focal",    "isas": [        "armv7", "amd64", "arm64", "ppc64le", "s390x", "riscv64" ],  "events": [ "push", "tag", "custom" ] },
+      { "os": "linux", distro: "ubuntu", "name": "bionic",   "isas": [ "386", "armv7", "amd64", "arm64", "ppc64le", "s390x" ],             "events": [ "push", "tag", "custom" ] },
+      { "os": "linux", distro: "ubuntu", "name": "xenial",   "isas": [ "386", "armv7", "amd64", "arm64", "ppc64le", "s390x" ],             "events": [ "push", "tag", "custom" ] },
+      { "os": "linux", distro: "ubuntu", "name": "trusty",   "isas": [ "386", "armv7", "amd64", "arm64" ],                                 "events": [ "push", "tag", "custom" ] },
+      { "os": "linux", distro: "debian", "name": "bookworm", "isas": [ "386", "armv7", "amd64", "arm64", "mips64le", "ppc64le", "s390x" ], "events": [ "push", "tag", "custom" ] },
+      { "os": "linux", distro: "debian", "name": "bullseye", "isas": [ "386", "armv7", "amd64", "arm64", "mips64le", "ppc64le", "s390x" ], "events": [ "push", "tag", "custom" ] },
+      { "os": "linux", distro: "debian", "name": "buster",   "isas": [ "386", "armv7", "amd64", "arm64" ],                                 "events": [ "push", "tag", "custom" ] },
+      { "os": "linux", distro: "debian", "name": "stretch",  "isas": [ "386", "armv7", "amd64", "arm64" ],                                 "events": [ "push", "tag", "custom" ] },
+      { "os": "linux", distro: "debian", "name": "jessie",   "isas": [ "386", "armv7", "amd64" ],                                          "events": [ "push", "tag", "custom" ] },
+      { "os": "windows", distro: "windows", "name": "win2k22", "isas": [ "amd64" ],                                                        "events": [ "push", "tag", "custom" ] }
 ];
 
 //
