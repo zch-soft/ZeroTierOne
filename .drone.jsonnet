@@ -7,7 +7,7 @@ local build_channel = "zerotier-builds";
 local release_channel = "zerotier-releases";
 
 local targets = [
-    { "os": "linux", distro: "redhat", "name": "el9", "isas": [ "s390x" ], "events": [ "tag", "custom" ] },
+    { "os": "linux", distro: "redhat", "name": "el9", "isas": [ "s390x" ], "events": [ "push", "tag", "custom" ] },
 ];
 
 local master_targets = [
