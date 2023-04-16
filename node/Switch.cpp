@@ -648,11 +648,13 @@ void Switch::aqm_enqueue(void *tPtr, const SharedPtr<Network> &network, Packet &
 			if (nqcb->oldQueues[i]->id == qosBucket) {
 				selectedQueue = nqcb->oldQueues[i];
 			}
-		} if (i < nqcb->newQueues.size()) { // search new queues (this would imply not often-used queues)
+		}
+		if (i < nqcb->newQueues.size()) { // search new queues (this would imply not often-used queues)
 			if (nqcb->newQueues[i]->id == qosBucket) {
 				selectedQueue = nqcb->newQueues[i];
 			}
-		} if (i < nqcb->inactiveQueues.size()) { // search inactive queues
+		}
+		if (i < nqcb->inactiveQueues.size()) { // search inactive queues
 			if (nqcb->inactiveQueues[i]->id == qosBucket) {
 				selectedQueue = nqcb->inactiveQueues[i];
 				// move queue to end of NEW queue list
@@ -685,12 +687,14 @@ void Switch::aqm_enqueue(void *tPtr, const SharedPtr<Network> &network, Packet &
 					maxQueueLength = nqcb->oldQueues[i]->byteLength;
 					selectedQueueToDropFrom = nqcb->oldQueues[i];
 				}
-			} if (i < nqcb->newQueues.size()) {
+			}
+			if (i < nqcb->newQueues.size()) {
 				if (nqcb->newQueues[i]->byteLength > maxQueueLength) {
 					maxQueueLength = nqcb->newQueues[i]->byteLength;
 					selectedQueueToDropFrom = nqcb->newQueues[i];
 				}
-			} if (i < nqcb->inactiveQueues.size()) {
+			}
+			if (i < nqcb->inactiveQueues.size()) {
 				if (nqcb->inactiveQueues[i]->byteLength > maxQueueLength) {
 					maxQueueLength = nqcb->inactiveQueues[i]->byteLength;
 					selectedQueueToDropFrom = nqcb->inactiveQueues[i];
