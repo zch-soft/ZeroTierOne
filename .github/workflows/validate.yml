@@ -5,7 +5,7 @@ env:
   ACTIONS_STEP_DEBUG: true
 
 jobs:
-  build_ubuntu:
+  validate:
     runs-on: ubuntu-latest
     steps:
     - name: gitconfig
