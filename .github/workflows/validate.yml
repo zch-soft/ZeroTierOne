@@ -37,16 +37,16 @@ jobs:
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
         restore-keys: ${{ runner.os }}-cargo-        
         
-    # - name: validate-1m-linux
-    #   env:
-    #     CC: 'gcc'
-    #     CXX: 'g++'
-    #     BRANCH: ${{  github.ref_name }}
-    #   run: |
-    #     sudo apt install -y valgrind xmlstarlet gcovr iperf3
-    #     make one ZT_COVERAGE=1 ZT_TRACE=1
-    #     sudo chmod +x ./.github/workflows/validate-1m-linux.sh
-    #     sudo ./.github/workflows/validate-1m-linux.sh
+    - name: validate-1m-linux
+      env:
+        CC: 'gcc'
+        CXX: 'g++'
+        BRANCH: ${{  github.ref_name }}
+      run: |
+        sudo apt install -y valgrind xmlstarlet gcovr iperf3
+        make one ZT_COVERAGE=1 ZT_TRACE=1
+        sudo chmod +x ./.github/workflows/validate-1m-linux.sh
+        sudo ./.github/workflows/validate-1m-linux.sh
 
     # - name: Archive test results
     #   uses: actions/upload-artifact@v3
