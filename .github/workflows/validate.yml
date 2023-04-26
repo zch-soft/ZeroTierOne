@@ -48,10 +48,6 @@ jobs:
         sudo chmod +x ./.github/workflows/validate-1m-linux.sh
         sudo ./.github/workflows/validate-1m-linux.sh
 
-    - name: ls -laR
-      run: |
-         ls -laR
-
     # - name: Archive test results
     #   uses: actions/upload-artifact@v3
     #   with:
