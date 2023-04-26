@@ -1,7 +1,7 @@
 on: [ push ]
 
 jobs:
-  build_ubuntu:
+  validate_ubuntu:
     runs-on: ubuntu-latest
     steps:
     - name: gitconfig
