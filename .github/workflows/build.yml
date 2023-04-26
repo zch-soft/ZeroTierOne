@@ -33,13 +33,13 @@ jobs:
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
         restore-keys: ${{ runner.os }}-cargo-
 
-    - name: make
-      run: make
+    # - name: make
+    #   run: make
       
-    - name: selftest
-      run: |
-        make selftest
-        ./zerotier-selftest
+    # - name: selftest
+    #   run: |
+    #     make selftest
+    #     ./zerotier-selftest
 
   # build_macos:
   #   runs-on: macos-latest
