@@ -13,6 +13,7 @@
 #define METRICS_H_
 
 #include <prometheus/simpleapi.h>
+#include <prometheus/histogram.h>
 
 namespace prometheus {
     namespace simpleapi {
@@ -94,12 +95,25 @@ namespace ZeroTier {
         extern prometheus::simpleapi::counter_metric_t pkt_error_authentication_required_out;
         extern prometheus::simpleapi::counter_metric_t pkt_error_internal_server_error_out;
 
-
         // Data Sent/Received Metrics
+        extern prometheus::simpleapi::counter_family_t data;
         extern prometheus::simpleapi::counter_metric_t udp_send;
         extern prometheus::simpleapi::counter_metric_t udp_recv;
         extern prometheus::simpleapi::counter_metric_t tcp_send;
         extern prometheus::simpleapi::counter_metric_t tcp_recv;
+
+        // Network Metrics
+        extern prometheus::simpleapi::gauge_metric_t   network_num_joined;
+        extern prometheus::simpleapi::gauge_family_t   network_num_multicast_groups;
+        extern prometheus::simpleapi::counter_family_t network_packets;
+
+#ifndef ZT_NO_PEER_METRICS
+        // Peer Metrics
+        extern prometheus::CustomFamily<prometheus::Histogram<uint64_t>> &peer_latency;
+        extern prometheus::simpleapi::gauge_family_t   peer_path_count;
+        extern prometheus::simpleapi::counter_family_t peer_packets;
+        extern prometheus::simpleapi::counter_family_t peer_packet_errors;
+#endif
 
         // General Controller Metrics
         extern prometheus::simpleapi::gauge_metric_t   network_count;
@@ -109,14 +123,34 @@ namespace ZeroTier {
         extern prometheus::simpleapi::counter_metric_t member_auths;
         extern prometheus::simpleapi::counter_metric_t member_deauths;
 
+        extern prometheus::simpleapi::gauge_metric_t network_config_request_queue_size;
+        extern prometheus::simpleapi::counter_metric_t sso_expiration_checks;
+        extern prometheus::simpleapi::counter_metric_t sso_member_deauth;
+        extern prometheus::simpleapi::counter_metric_t network_config_request;
+        extern prometheus::simpleapi::gauge_metric_t network_config_request_threads;
+
+        extern prometheus::simpleapi::counter_metric_t db_get_network;
+        extern prometheus::simpleapi::counter_metric_t db_get_network_and_member;
+        extern prometheus::simpleapi::counter_metric_t db_get_network_and_member_and_summary;
+        extern prometheus::simpleapi::counter_metric_t db_get_member_list;
+        extern prometheus::simpleapi::counter_metric_t db_get_network_list;
+        extern prometheus::simpleapi::counter_metric_t db_member_change;
+        extern prometheus::simpleapi::counter_metric_t db_network_change;
+
+
 #ifdef ZT_CONTROLLER_USE_LIBPQ
         // Central Controller Metrics
         extern prometheus::simpleapi::counter_metric_t pgsql_mem_notification;
         extern prometheus::simpleapi::counter_metric_t pgsql_net_notification;
         extern prometheus::simpleapi::counter_metric_t pgsql_node_checkin;
+        extern prometheus::simpleapi::counter_metric_t pgsql_commit_ticks;
+        extern prometheus::simpleapi::counter_metric_t db_get_sso_info;
+        
         extern prometheus::simpleapi::counter_metric_t redis_mem_notification;
         extern prometheus::simpleapi::counter_metric_t redis_net_notification;
         extern prometheus::simpleapi::counter_metric_t redis_node_checkin;
+
+        
 
         // Central DB Pool Metrics
         extern prometheus::simpleapi::counter_metric_t conn_counter;

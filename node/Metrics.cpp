@@ -11,6 +11,7 @@
  */
 
 #include <prometheus/simpleapi.h>
+#include <prometheus/histogram.h>
 
 namespace prometheus {
     namespace simpleapi {
@@ -24,7 +25,7 @@ namespace ZeroTier {
     namespace Metrics {
         // Packet Type Counts
         prometheus::simpleapi::counter_family_t packets
-        { "zt_packet_incoming", "incoming packet type counts"};
+        { "zt_packet", "ZeroTier packet type counts"};
 
         // Incoming packets
         prometheus::simpleapi::counter_metric_t pkt_nop_in
@@ -117,7 +118,7 @@ namespace ZeroTier {
 
         // Packet Error Counts
         prometheus::simpleapi::counter_family_t packet_errors
-        { "zt_packet_incoming_error", "incoming packet errors"};
+        { "zt_packet_error", "ZeroTier packet errors"};
 
         // Incoming Error Counts
         prometheus::simpleapi::counter_metric_t pkt_error_obj_not_found_in
@@ -156,14 +157,40 @@ namespace ZeroTier {
         { packet_errors.Add({{"error_type", "internal_server_error"}, {"direction", "tx"}}) };
 
         // Data Sent/Received Metrics
-        prometheus::simpleapi::counter_metric_t udp_send
-        { "zt_udp_data_sent", "number of bytes ZeroTier has sent via UDP" };
+        prometheus::simpleapi::counter_family_t data
+        { "zt_data", "number of bytes ZeroTier has transmitted or received" };
         prometheus::simpleapi::counter_metric_t udp_recv
-        { "zt_udp_data_recv", "number of bytes ZeroTier has received via UDP" };
+        { data.Add({{"protocol","udp"},{"direction","rx"}}) };
+        prometheus::simpleapi::counter_metric_t udp_send
+        { data.Add({{"protocol","udp"},{"direction","tx"}}) };
         prometheus::simpleapi::counter_metric_t tcp_send
-        { "zt_tcp_data_sent", "number of bytes ZeroTier has sent via TCP" };
+        { data.Add({{"protocol","tcp"},{"direction", "tx"}}) };
         prometheus::simpleapi::counter_metric_t tcp_recv
-        { "zt_tcp_data_recv", "number of bytes ZeroTier has received via TCP" };
+        { data.Add({{"protocol","tcp"},{"direction", "rx"}}) };
+
+        // Network Metrics
+        prometheus::simpleapi::gauge_metric_t network_num_joined
+        { "zt_num_networks", "number of networks this instance is joined to" };
+        prometheus::simpleapi::gauge_family_t network_num_multicast_groups
+        { "zt_network_multicast_groups_subscribed", "number of multicast groups networks are subscribed to" };
+        prometheus::simpleapi::counter_family_t network_packets
+        { "zt_network_packets", "number of incoming/outgoing packets per network" };
+        
+#ifndef ZT_NO_PEER_METRICS
+        // PeerMetrics
+        prometheus::CustomFamily<prometheus::Histogram<uint64_t>> &peer_latency = 
+        prometheus::Builder<prometheus::Histogram<uint64_t>>()
+            .Name("zt_peer_latency")
+            .Help("peer latency (ms)")
+            .Register(prometheus::simpleapi::registry);
+    
+        prometheus::simpleapi::gauge_family_t peer_path_count
+        { "zt_peer_path_count", "number of paths to peer" };
+        prometheus::simpleapi::counter_family_t peer_packets
+        { "zt_peer_packets", "number of packets to/from a peer" };
+        prometheus::simpleapi::counter_family_t peer_packet_errors
+        { "zt_peer_packet_errors" , "number of incoming packet errors from a peer" };
+#endif
 
         // General Controller Metrics
         prometheus::simpleapi::gauge_metric_t   network_count
@@ -179,6 +206,34 @@ namespace ZeroTier {
         prometheus::simpleapi::counter_metric_t member_deauths
         {"controller_member_deauth_count", "number of network member deauths"};
 
+        prometheus::simpleapi::gauge_metric_t network_config_request_queue_size
+        { "controller_network_config_request_queue", "number of entries in the request queue for network configurations" };
+        
+        prometheus::simpleapi::counter_metric_t sso_expiration_checks
+        { "controller_sso_expiration_checks", "number of sso expiration checks done" };
+
+        prometheus::simpleapi::counter_metric_t sso_member_deauth
+        { "controller_sso_timeouts", "number of sso timeouts" };
+
+        prometheus::simpleapi::counter_metric_t network_config_request
+        { "controller_network_config_request", "count of config requests handled" };
+        prometheus::simpleapi::gauge_metric_t network_config_request_threads
+        { "controller_network_config_request_threads", "number of active network config handling threads" };
+        prometheus::simpleapi::counter_metric_t db_get_network
+        { "controller_db_get_network", "counter" };
+        prometheus::simpleapi::counter_metric_t db_get_network_and_member
+        { "controller_db_get_network_and_member", "counter" };
+        prometheus::simpleapi::counter_metric_t db_get_network_and_member_and_summary
+        { "controller_db_get_networK_and_member_summary", "counter" };
+        prometheus::simpleapi::counter_metric_t db_get_member_list
+        { "controller_db_get_member_list", "counter" };
+        prometheus::simpleapi::counter_metric_t db_get_network_list
+        { "controller_db_get_network_list", "counter" };
+        prometheus::simpleapi::counter_metric_t db_member_change
+        { "controller_db_member_change", "counter" };
+        prometheus::simpleapi::counter_metric_t db_network_change
+        { "controller_db_network_change", "counter" };
+
 #ifdef ZT_CONTROLLER_USE_LIBPQ
         // Central Controller Metrics
         prometheus::simpleapi::counter_metric_t pgsql_mem_notification
@@ -187,6 +242,11 @@ namespace ZeroTier {
         { "controller_pgsql_network_notifications_received", "number of network change notifications received via pgsql NOTIFY" };
         prometheus::simpleapi::counter_metric_t pgsql_node_checkin
         { "controller_pgsql_node_checkin_count", "number of node check-ins (pgsql)" };
+        prometheus::simpleapi::counter_metric_t pgsql_commit_ticks
+        { "controller_pgsql_commit_ticks", "number of commit ticks run (pgsql)" };
+        prometheus::simpleapi::counter_metric_t db_get_sso_info
+        { "controller_db_get_sso_info", "counter" };
+
         prometheus::simpleapi::counter_metric_t redis_mem_notification
         { "controller_redis_member_notifications_received", "number of member change notifications received via redis" };
         prometheus::simpleapi::counter_metric_t redis_net_notification

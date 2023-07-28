@@ -201,6 +201,26 @@ std::string ssoResponseTemplate = R"""(
 </html>
 )""";
 
+bool bearerTokenValid(const std::string authHeader, const std::string &checkToken) {
+	std::vector<std::string> tokens = OSUtils::split(authHeader.c_str(), " ", NULL, NULL);
+	if (tokens.size() != 2) {
+		return false;
+	}
+
+	std::string bearer = tokens[0];
+	std::string token = tokens[1];
+	std::transform(bearer.begin(), bearer.end(), bearer.begin(), [](unsigned char c){return std::tolower(c);});
+	if (bearer != "bearer") {
+		return false;
+	}
+
+	if (token != checkToken) {
+		return false;
+	}
+
+	return true;
+}
+
 #if ZT_DEBUG==1
 std::string dump_headers(const httplib::Headers &headers) {
   std::string s;
@@ -406,15 +426,6 @@ public:
 		return _managedRoutes;
 	}
 
-	const char* getAuthURL() {
-#if ZT_SSO_ENABLED
-		if (_idc != nullptr) {
-			return zeroidc::zeroidc_get_auth_url(_idc);
-		}
-		fprintf(stderr, "_idc is null\n");
-#endif
-		return "";
-	}
 
 	char* doTokenExchange(const char *code) {
 		char *ret = nullptr;
@@ -572,7 +583,7 @@ static void _networkToJson(nlohmann::json &nj,NetworkState &ns)
 	}
 	nj["dns"] = m;
 	if (ns.config().ssoEnabled) {
-		const char* authURL = ns.getAuthURL();
+		const char* authURL = ns.config().authenticationURL;
 		//fprintf(stderr, "Auth URL: %s\n", authURL);
 		nj["authenticationURL"] = authURL;
 		nj["authenticationExpiryTime"] = (ns.getExpiryTime()*1000);
@@ -762,6 +773,7 @@ public:
 
 	const std::string _homePath;
 	std::string _authToken;
+	std::string _metricsToken;
 	std::string _controllerDbPath;
 	const std::string _networksPath;
 	const std::string _moonsPath;
@@ -774,6 +786,7 @@ public:
 
     httplib::Server _controlPlane;
     std::thread _serverThread;
+	bool _serverThreadRunning;
 
     bool _allowTcpFallbackRelay;
 	bool _forceTcpRelay;
@@ -875,6 +888,7 @@ public:
 		,_updateAutoApply(false)
         ,_controlPlane()
         ,_serverThread()
+		,_serverThreadRunning(false)
 		,_forceTcpRelay(false)
 		,_primaryPort(port)
 		,_udpPortPickerCounter(0)
@@ -926,8 +940,9 @@ public:
 #endif
 
         _controlPlane.stop();
-        _serverThread.join();
-
+		if (_serverThreadRunning) {
+	        _serverThread.join();
+		}
 
 #ifdef ZT_USE_MINIUPNPC
 		delete _portMapper;
@@ -960,6 +975,26 @@ public:
 			}
 
 			{
+				const std::string metricsTokenPath(_homePath + ZT_PATH_SEPARATOR_S "metricstoken.secret");
+				if (!OSUtils::readFile(metricsTokenPath.c_str(),_metricsToken)) {
+					unsigned char foo[24];
+					Utils::getSecureRandom(foo,sizeof(foo));
+					_metricsToken = "";
+					for(unsigned int i=0;i<sizeof(foo);++i)
+						_metricsToken.push_back("abcdefghijklmnopqrstuvwxyz0123456789"[(unsigned long)foo[i] % 36]);
+					if (!OSUtils::writeFile(metricsTokenPath.c_str(),_metricsToken)) {
+						Mutex::Lock _l(_termReason_m);
+						_termReason = ONE_UNRECOVERABLE_ERROR;
+						_fatalErrorMessage = "metricstoken.secret could not be written";
+						return _termReason;
+					} else {
+						OSUtils::lockDownFile(metricsTokenPath.c_str(),false);
+					}
+				}
+				_metricsToken = _trimString(_metricsToken);
+			}
+
+			{
 				struct ZT_Node_Callbacks cb;
 				cb.version = 0;
 				cb.stateGetFunction = SnodeStateGetFunction;
@@ -972,7 +1007,6 @@ public:
 				cb.pathLookupFunction = SnodePathLookupFunction;
 				_node = new Node(this,(void *)0,&cb,OSUtils::now());
 			}
-
 
 			// local.conf
 			readLocalSettings();
@@ -1228,6 +1262,51 @@ public:
 			Mutex::Lock _l(_termReason_m);
 			_termReason = ONE_UNRECOVERABLE_ERROR;
 			_fatalErrorMessage = std::string("unexpected exception in main thread: ")+e.what();
+		} catch (int e) {
+			Mutex::Lock _l(_termReason_m);
+			_termReason = ONE_UNRECOVERABLE_ERROR;
+			switch (e) {
+				case ZT_EXCEPTION_OUT_OF_BOUNDS: {
+					_fatalErrorMessage = "out of bounds exception";
+					break;
+				}
+				case ZT_EXCEPTION_OUT_OF_MEMORY: {
+					_fatalErrorMessage = "out of memory";
+					break;
+				}
+				case ZT_EXCEPTION_PRIVATE_KEY_REQUIRED: {
+					_fatalErrorMessage = "private key required";
+					break;
+				}
+				case ZT_EXCEPTION_INVALID_ARGUMENT: {
+					_fatalErrorMessage = "invalid argument";
+					break;
+				}
+				case ZT_EXCEPTION_INVALID_IDENTITY: {
+					_fatalErrorMessage = "invalid identity loaded from disk. Please remove identity.public and identity.secret from " + _homePath + " and try again";
+					break;
+				}
+				case ZT_EXCEPTION_INVALID_SERIALIZED_DATA_INVALID_TYPE: {
+					_fatalErrorMessage = "invalid serialized data: invalid type";
+					break;
+				}
+				case ZT_EXCEPTION_INVALID_SERIALIZED_DATA_OVERFLOW: {
+					_fatalErrorMessage = "invalid serialized data: overflow";
+					break;
+				}
+				case ZT_EXCEPTION_INVALID_SERIALIZED_DATA_INVALID_CRYPTOGRAPHIC_TOKEN: {
+					_fatalErrorMessage = "invalid serialized data: invalid cryptographic token";
+					break;
+				}
+				case ZT_EXCEPTION_INVALID_SERIALIZED_DATA_BAD_ENCODING: {
+					_fatalErrorMessage = "invalid serialized data: bad encoding";
+					break;
+				}
+				default: {
+					_fatalErrorMessage = "unexpected exception code: " + std::to_string(e);
+					break;
+				}
+			}
 		} catch ( ... ) {
 			Mutex::Lock _l(_termReason_m);
 			_termReason = ONE_UNRECOVERABLE_ERROR;
@@ -1467,59 +1546,86 @@ public:
 
 
         auto authCheck = [=] (const httplib::Request &req, httplib::Response &res) {
-            std::string r = req.remote_addr;
-            InetAddress remoteAddr(r.c_str());
+			if (req.path == "/metrics") {
 
-            bool ipAllowed = false;
-            bool isAuth = false;
-            // If localhost, allow
-            if (remoteAddr.ipScope() == InetAddress::IP_SCOPE_LOOPBACK) {
-                ipAllowed = true;
-            }
+				if (req.has_header("x-zt1-auth")) {
+					std::string token = req.get_header_value("x-zt1-auth");
+					if (token == _metricsToken || token == _authToken) {
+						return httplib::Server::HandlerResponse::Unhandled;
+					}
+				} else if (req.has_param("auth")) {
+					std::string token = req.get_param_value("auth");
+					if (token == _metricsToken || token == _authToken) {
+						return httplib::Server::HandlerResponse::Unhandled;
+					}
+				} else if (req.has_header("authorization")) {
+					std::string auth = req.get_header_value("authorization");
+					if (bearerTokenValid(auth, _metricsToken) || bearerTokenValid(auth, _authToken)) {
+						return httplib::Server::HandlerResponse::Unhandled;
+					}
+				}
 
-            if (!ipAllowed) {
-                for (auto i = _allowManagementFrom.begin(); i != _allowManagementFrom.end(); ++i) {
-                    if (i->containsAddress(remoteAddr)) {
-                        ipAllowed  = true;
-                        break;
-                    }
-                }
-            }
+				setContent(req, res, "{}");
+				res.status = 401;
+				return httplib::Server::HandlerResponse::Handled;
+			} else {
+				std::string r = req.remote_addr;
+				InetAddress remoteAddr(r.c_str());
+
+				bool ipAllowed = false;
+				bool isAuth = false;
+				// If localhost, allow
+				if (remoteAddr.ipScope() == InetAddress::IP_SCOPE_LOOPBACK) {
+					ipAllowed = true;
+				}
+
+				if (!ipAllowed) {
+					for (auto i = _allowManagementFrom.begin(); i != _allowManagementFrom.end(); ++i) {
+						if (i->containsAddress(remoteAddr)) {
+							ipAllowed  = true;
+							break;
+						}
+					}
+				}
 
 
-            if (ipAllowed) {
-                // auto-pass endpoints in `noAuthEndpoints`.  No auth token required
-                if (std::find(noAuthEndpoints.begin(), noAuthEndpoints.end(), req.path) != noAuthEndpoints.end()) {
-                    isAuth = true;
-                }
+				if (ipAllowed) {
+					// auto-pass endpoints in `noAuthEndpoints`.  No auth token required
+					if (std::find(noAuthEndpoints.begin(), noAuthEndpoints.end(), req.path) != noAuthEndpoints.end()) {
+						isAuth = true;
+					}
 
-                if (!isAuth) {
-                    // check auth token
-                    if (req.has_header("x-zt1-auth")) {
-                        std::string token = req.get_header_value("x-zt1-auth");
-                        if (token == _authToken) {
-                            isAuth = true;
-                        }
-                    } else if (req.has_param("auth")) {
-                        std::string token = req.get_param_value("auth");
-                        if (token == _authToken) {
-                            isAuth = true;
-                        }
-                    }
-                }
-            }
+					if (!isAuth) {
+						// check auth token
+						if (req.has_header("x-zt1-auth")) {
+							std::string token = req.get_header_value("x-zt1-auth");
+							if (token == _authToken) {
+								isAuth = true;
+							}
+						} else if (req.has_param("auth")) {
+							std::string token = req.get_param_value("auth");
+							if (token == _authToken) {
+								isAuth = true;
+							}
+						} else if (req.has_header("authorization")) {
+							std::string auth = req.get_header_value("authorization");
+							isAuth = bearerTokenValid(auth, _authToken);
+						}
+					}
+				}
 
-            if (ipAllowed && isAuth) {
-                return httplib::Server::HandlerResponse::Unhandled;
-            }
-			setContent(req, res, "{}");
-            res.status = 401;
-            return httplib::Server::HandlerResponse::Handled;
+				if (ipAllowed && isAuth) {
+					return httplib::Server::HandlerResponse::Unhandled;
+				}
+				setContent(req, res, "{}");
+				res.status = 401;
+				return httplib::Server::HandlerResponse::Handled;
+			}
         };
 
 
 
-		_controlPlane.Get("/bond/show/([0-9a-fA-F]{10})", [&](const httplib::Request &req, httplib::Response &res) {
+		_controlPlane.Get("/bond/show/([0-9a-fA-F]{10})", [&, setContent](const httplib::Request &req, httplib::Response &res) {
 			if (!_node->bondController()->inUse()) {
 				setContent(req, res, "");
 				res.status = 400;
@@ -1547,7 +1653,7 @@ public:
 			_node->freeQueryResult((void *)pl);
 		});
 
-		auto bondRotate = [&](const httplib::Request &req, httplib::Response &res) {
+		auto bondRotate = [&, setContent](const httplib::Request &req, httplib::Response &res) {
 			if (!_node->bondController()->inUse()) {
 				setContent(req, res, "");
 				res.status = 400;
@@ -1574,7 +1680,7 @@ public:
 		_controlPlane.Post("/bond/rotate/([0-9a-fA-F]{10})", bondRotate);
 		_controlPlane.Put("/bond/rotate/([0-9a-fA-F]{10})", bondRotate);
 
-		_controlPlane.Get("/config", [&](const httplib::Request &req, httplib::Response &res) {
+		_controlPlane.Get("/config", [&, setContent](const httplib::Request &req, httplib::Response &res) {
 			std::string config;
 			{
 				Mutex::Lock lc(_localConfig_m);
@@ -1586,7 +1692,7 @@ public:
 			setContent(req, res, config);
 		});
 
-		auto configPost = [&](const httplib::Request &req, httplib::Response &res) {
+		auto configPost = [&, setContent](const httplib::Request &req, httplib::Response &res) {
 			json j(OSUtils::jsonParse(req.body));
 			if (j.is_object()) {
 				Mutex::Lock lcl(_localConfig_m);
@@ -1604,7 +1710,7 @@ public:
 		_controlPlane.Post("/config/settings", configPost);
 		_controlPlane.Put("/config/settings", configPost);
 
-		_controlPlane.Get("/health", [&](const httplib::Request &req, httplib::Response &res) {
+		_controlPlane.Get("/health", [&, setContent](const httplib::Request &req, httplib::Response &res) {
 			json out = json::object();
 
 			char tmp[256];
@@ -1624,7 +1730,7 @@ public:
 			setContent(req, res, out.dump());
 		});
 
-		_controlPlane.Get("/moon", [&](const httplib::Request &req, httplib::Response &res) {
+		_controlPlane.Get("/moon", [&, setContent](const httplib::Request &req, httplib::Response &res) {
 			std::vector<World> moons(_node->moons());
 
 			auto out = json::array();
@@ -1636,7 +1742,7 @@ public:
 			setContent(req, res, out.dump());
 		});
 
-		_controlPlane.Get("/moon/([0-9a-fA-F]{10})", [&](const httplib::Request &req, httplib::Response &res){
+		_controlPlane.Get("/moon/([0-9a-fA-F]{10})", [&, setContent](const httplib::Request &req, httplib::Response &res){
 			std::vector<World> moons(_node->moons());
 			auto input = req.matches[1];
 			auto out = json::object();
@@ -1650,7 +1756,7 @@ public:
 			setContent(req, res, out.dump());
 		});
 
-		auto moonPost = [&](const httplib::Request &req, httplib::Response &res) {
+		auto moonPost = [&, setContent](const httplib::Request &req, httplib::Response &res) {
 			auto input = req.matches[1];
 			uint64_t seed = 0;
 			try {
@@ -1690,7 +1796,7 @@ public:
 		_controlPlane.Post("/moon/([0-9a-fA-F]{10})", moonPost);
 		_controlPlane.Put("/moon/([0-9a-fA-F]{10})", moonPost);
 
-		_controlPlane.Delete("/moon/([0-9a-fA-F]{10})", [&](const httplib::Request &req, httplib::Response &res) {
+		_controlPlane.Delete("/moon/([0-9a-fA-F]{10})", [&, setContent](const httplib::Request &req, httplib::Response &res) {
 			auto input = req.matches[1];
 			uint64_t id = Utils::hexStrToU64(input.str().c_str());
 			auto out = json::object();
@@ -1699,7 +1805,7 @@ public:
 			setContent(req, res, out.dump());
 		});
 
-		_controlPlane.Get("/network", [&](const httplib::Request &req, httplib::Response &res) {
+		_controlPlane.Get("/network", [&, setContent](const httplib::Request &req, httplib::Response &res) {
             Mutex::Lock _l(_nets_m);
             auto out = json::array();
 
@@ -1712,7 +1818,7 @@ public:
 			setContent(req, res, out.dump());
         });
 
-        _controlPlane.Get("/network/([0-9a-fA-F]{16})", [&](const httplib::Request &req, httplib::Response &res) {
+        _controlPlane.Get("/network/([0-9a-fA-F]{16})", [&, setContent](const httplib::Request &req, httplib::Response &res) {
 			Mutex::Lock _l(_nets_m);
 
             auto input = req.matches[1];
@@ -1728,12 +1834,14 @@ public:
 			res.status = 404;
         });
 
-		auto networkPost = [&](const httplib::Request &req, httplib::Response &res) {
+		auto networkPost = [&, setContent](const httplib::Request &req, httplib::Response &res) {
 			auto input = req.matches[1];
 			uint64_t wantnw = Utils::hexStrToU64(input.str().c_str());
 			_node->join(wantnw, (void*)0, (void*)0);
 			auto out = json::object();
 			Mutex::Lock l(_nets_m);
+			bool allowDefault = false;
+
 			if (!_nets.empty()) {
 				NetworkState &ns = _nets[wantnw];
 				try {
@@ -1747,8 +1855,9 @@ public:
 					if (allowGlobal.is_boolean()) {
 						ns.setAllowGlobal((bool)allowGlobal);
 					}
-					json& allowDefault = j["allowDefault"];
-					if (allowDefault.is_boolean()) {
+					json& _allowDefault = j["allowDefault"];
+					if (_allowDefault.is_boolean()) {
+						allowDefault = _allowDefault;
 						ns.setAllowDefault((bool)allowDefault);
 					}
 					json& allowDNS = j["allowDNS"];
@@ -1765,12 +1874,22 @@ public:
 
 				_networkToJson(out, ns);
 			}
+#ifdef __FreeBSD__
+			if(!!allowDefault){
+				res.status = 400;
+				setContent(req, res, "Allow Default does not work properly on FreeBSD. See #580");
+			} else {
+				setContent(req, res, out.dump());
+
+			}
+#else
 			setContent(req, res, out.dump());
+#endif
 		};
 		_controlPlane.Post("/network/([0-9a-fA-F]{16})", networkPost);
 		_controlPlane.Put("/network/([0-9a-fA-F]){16}", networkPost);
 
-		_controlPlane.Delete("/network/([0-9a-fA-F]{16})", [&](const httplib::Request &req, httplib::Response &res) {
+		_controlPlane.Delete("/network/([0-9a-fA-F]{16})", [&, setContent](const httplib::Request &req, httplib::Response &res) {
 			auto input = req.matches[1];
 			auto out = json::object();
 			ZT_VirtualNetworkList *nws = _node->networks();
@@ -1785,7 +1904,7 @@ public:
 			setContent(req, res, out.dump());
 		});
 
-		_controlPlane.Get("/peer", [&](const httplib::Request &req, httplib::Response &res) {
+		_controlPlane.Get("/peer", [&, setContent](const httplib::Request &req, httplib::Response &res) {
 			ZT_PeerList *pl = _node->peers();
 			auto out = nlohmann::json::array();
 
@@ -1803,7 +1922,7 @@ public:
 			setContent(req, res, out.dump());
 		});
 
-		_controlPlane.Get("/peer/([0-9a-fA-F]{10})", [&](const httplib::Request &req, httplib::Response &res) {
+		_controlPlane.Get("/peer/([0-9a-fA-F]{10})", [&, setContent](const httplib::Request &req, httplib::Response &res) {
 			ZT_PeerList *pl = _node->peers();
 
 			auto input = req.matches[1];
@@ -1823,7 +1942,7 @@ public:
 			setContent(req, res, out.dump());
 		});
 
-		_controlPlane.Get("/status", [&](const httplib::Request &req, httplib::Response &res) {
+		_controlPlane.Get("/status", [&, setContent](const httplib::Request &req, httplib::Response &res) {
             ZT_NodeStatus status;
             _node->status(&status);
 
@@ -1969,7 +2088,7 @@ public:
             }
         });
 
-		_controlPlane.set_exception_handler([&](const httplib::Request &req, httplib::Response &res, std::exception_ptr ep) {
+		_controlPlane.set_exception_handler([&, setContent](const httplib::Request &req, httplib::Response &res, std::exception_ptr ep) {
 			char buf[1024];
 			auto fmt = "{\"error\": %d, \"description\": \"%s\"}";
 			try {
@@ -1994,15 +2113,24 @@ public:
 			fprintf(stderr, "%s", http_log(req, res).c_str());
 		});
 #endif
+		if (_primaryPort==0) {
+			fprintf(stderr, "unable to determine local control port");
+			exit(-1);
+		}
+
+		if(!_controlPlane.bind_to_port("0.0.0.0", _primaryPort)) {
+			fprintf(stderr, "Error binding control plane to port %d\n", _primaryPort);
+			exit(-1);
+		}
 
         _serverThread = std::thread([&] {
-			if (_primaryPort==0) {
-				fprintf(stderr, "unable to determine local control port");
-				exit(-1);
-			}
+			_serverThreadRunning = true;
             fprintf(stderr, "Starting Control Plane...\n");
-            _controlPlane.listen("0.0.0.0", _primaryPort);
+            if(!_controlPlane.listen_after_bind()) {
+				fprintf(stderr, "Error on listen_after_bind()\n");
+			}
             fprintf(stderr, "Control Plane Stopped\n");
+			_serverThreadRunning = false;
         });
 
     }
@@ -2403,8 +2531,13 @@ public:
 			}
 
 #ifdef __APPLE__
-			if (!MacDNSHelper::addIps(n.config().nwid, n.config().mac, n.tap()->deviceName().c_str(), newManagedIps))
+			if (!MacDNSHelper::addIps6(n.config().nwid, n.config().mac, n.tap()->deviceName().c_str(), newManagedIps)) {
 				fprintf(stderr, "ERROR: unable to add v6 addresses to system configuration" ZT_EOL_S);
+			}
+
+			if (!MacDNSHelper::addIps4(n.config().nwid, n.config().mac, n.tap()->deviceName().c_str(), newManagedIps)) {
+				fprintf(stderr, "ERROR: unable to add v4 addresses to system configuration" ZT_EOL_S);
+			}
 #endif
 			n.setManagedIps(newManagedIps);
 		}
